@@ -98,28 +98,26 @@ def login(username=None, password=None, access_token=None, expiresIn=86400, scop
     if mfa_code:
         payload['mfa_code'] = mfa_code
 
-    if access_token:
+    if access_token and access_token.token:
         try:
             token = access_token.token
             token_type = access_token.meta.get("token_type")
             # Set login status to True in order to try and get account info.
             set_login_state(True)
             update_session(
-                'Authorization', '{0} {1}'.format(token_type, access_token))
+                'Authorization', '{0} {1}'.format(token_type, token))
             # Try to load account profile to check that authorization token is still valid.
             res = request_get(
                 positions_url(), 'pagination', {'nonzero': 'true'}, jsonify_data=False)
             # Raises exception is response code is not 200.
             res.raise_for_status()
-            return({'access_token': access_token, 'token_type': token_type,
-                    'expires_in': expiresIn, 'scope': scope, 'detail': 'logged in using authentication in {0}'.format(creds_file),
-                    'backup_code': None, 'refresh_token': refresh_token})
-        except:
+            return({'access_token': token, 'token_type': token_type,
+                    'expires_in': expiresIn, 'scope': scope, 'detail': 'logged in using authentication in'})
+        except Exception as ex:
             print(
-                "ERROR: There was an issue loading pickle file. Authentication may be expired - logging in normally.", file=get_output())
+                "ERROR: There was an issue using access token. Authentication may be expired - logging in normally.", file=get_output())
             set_login_state(False)
             update_session('Authorization', None)
-
     data = request_post(url, payload)
     # Handle case where mfa or challenge is required.
     if data:
