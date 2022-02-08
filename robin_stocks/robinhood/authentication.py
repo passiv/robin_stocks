@@ -7,6 +7,9 @@ import random
 from robin_stocks.robinhood.helper import *
 from robin_stocks.robinhood.urls import *
 
+EXPIRY_TIME = 691200
+CLIENT_ID = 'c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS'
+
 def generate_device_token():
     """This function will generate a token used when loggin on.
 
@@ -50,7 +53,33 @@ def respond_to_challenge(challenge_id, sms_code):
     return(request_post(url, payload))
 
 
-def login(username=None, password=None, access_token=None, expiresIn=86400, scope='internal', by_sms=True, mfa_code=None):
+def refresh_access_token(refresh_token):
+    """This function will refresh the access token with a refresh token.
+
+    :param refresh_token: The refresh token to use.
+    :returns:  The response from requests.
+
+    """
+    url = login_url()
+    relogin_payload = {
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "scope": "internal",
+        "client_id": CLIENT_ID,
+        "expires_in": EXPIRY_TIME,
+    }
+    update_session('Authorization', None)
+    try:
+        data = request_post(url, relogin_payload)
+    except HTTPError:
+        raise AuthenticationError("Failed to refresh token")
+
+    update_session(
+        'Authorization', '{0} {1}'.format(data.get('token_type'), data.get('access_token')))
+    return data
+
+
+def login(username=None, password=None, access_token=None, expiresIn=EXPIRY_TIME, scope='internal', by_sms=True, mfa_code=None):
     """This function will effectively log the user into robinhood by getting an
     authentication token and saving it to the session header. By default, it
     will store the authentication token in a pickle file and load that value
@@ -85,7 +114,7 @@ def login(username=None, password=None, access_token=None, expiresIn=86400, scop
 
     url = login_url()
     payload = {
-        'client_id': 'c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS',
+        'client_id': CLIENT_ID,
         'expires_in': expiresIn,
         'grant_type': 'password',
         'password': password,
