@@ -79,7 +79,7 @@ def refresh_access_token(refresh_token):
     return data
 
 
-def login(username=None, password=None, access_token=None, expiresIn=EXPIRY_TIME, scope='internal', by_sms=True, mfa_code=None):
+def login(username=None, password=None, access_token=None, expiresIn=EXPIRY_TIME, scope='internal', by_sms=True, mfa_code=None, challenge_id=None, device_token=None):
     """This function will effectively log the user into robinhood by getting an
     authentication token and saving it to the session header. By default, it
     will store the authentication token in a pickle file and load that value
@@ -105,7 +105,8 @@ def login(username=None, password=None, access_token=None, expiresIn=EXPIRY_TIME
     contains information on whether the access token was generated or loaded from pickle file.
 
     """
-    device_token = generate_device_token()
+    if not device_token:
+        device_token = generate_device_token()
     # Challenge type is used if not logging in with two-factor authentication.
     if by_sms:
         challenge_type = "sms"
@@ -125,7 +126,16 @@ def login(username=None, password=None, access_token=None, expiresIn=EXPIRY_TIME
     }
 
     if mfa_code:
-        payload['mfa_code'] = mfa_code
+        if challenge_id:
+            res = respond_to_challenge(challenge_id, mfa_code)
+            update_session(
+                'X-ROBINHOOD-CHALLENGE-RESPONSE-ID', challenge_id)
+            if 'challenge' in res:
+                raise Exception("Unable to log in with provided credentials")
+            import time
+            time.sleep(2)
+        else:
+            payload['mfa_code'] = mfa_code
 
     if access_token and access_token.token:
         try:
@@ -162,7 +172,8 @@ def login(username=None, password=None, access_token=None, expiresIn=EXPIRY_TIME
                 res = request_post(url, payload, jsonify_data=False)
             data = res.json()
         elif 'challenge' in data:
-            return "CHALLENGE_REQUIRED"
+            return {"CHALLENGE_ID": data['challenge']['id']}
+            #return "CHALLENGE_REQUIRED"
             challenge_id = data['challenge']['id']
             sms_code = input('Enter Robinhood code for validation: ')
             res = respond_to_challenge(challenge_id, sms_code)
