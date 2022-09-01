@@ -7,7 +7,7 @@ import random
 from robin_stocks.robinhood.helper import *
 from robin_stocks.robinhood.urls import *
 
-EXPIRY_TIME = 691200
+EXPIRY_TIME = 704623
 CLIENT_ID = 'c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS'
 
 def generate_device_token():
@@ -53,22 +53,24 @@ def respond_to_challenge(challenge_id, sms_code):
     return(request_post(url, payload))
 
 
-def refresh_access_token(refresh_token):
+def refresh_access_token(refresh_token, device_token=None):
     """This function will refresh the access token with a refresh token.
 
     :param refresh_token: The refresh token to use.
     :returns:  The response from requests.
 
     """
+    if not device_token:
+        device_token = generate_device_token()
     url = login_url()
     relogin_payload = {
-        "grant_type": "refresh_token",
-        "refresh_token": refresh_token,
-        "scope": "internal",
         "client_id": CLIENT_ID,
-        "expires_in": EXPIRY_TIME,
+        "grant_type": "refresh_token",
+        "device_token": device_token,
+        "refresh_token": refresh_token,
+        "scope": "web_limited",
     }
-    update_session('Authorization', None)
+    pop_session_header('Authorization')
     try:
         data = request_post(url, relogin_payload)
     except HTTPError:

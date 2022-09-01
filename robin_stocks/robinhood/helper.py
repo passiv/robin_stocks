@@ -390,6 +390,17 @@ def update_session(key, value):
     """
     SESSION.headers[key] = value
 
+def pop_session_header(key):
+    """Removes a header.
+
+    :param key: The key value to pop from session header.
+    :type key: str.
+    """
+    try:
+        SESSION.headers.pop(key, None)
+    except:
+        pass
+
 
 def error_argument_not_key_in_dictionary(keyword):
     return('Error: The keyword "{0}" is not a key in the dictionary.'.format(keyword))
