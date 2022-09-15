@@ -7,7 +7,7 @@ import random
 from robin_stocks.robinhood.helper import *
 from robin_stocks.robinhood.urls import *
 
-EXPIRY_TIME = 704623
+EXPIRY_TIME = 86400
 CLIENT_ID = 'c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS'
 
 def generate_device_token():
